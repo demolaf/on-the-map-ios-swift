@@ -13,14 +13,14 @@ class MainTabBarViewController: UITabBarController {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "LOGOUT", style: .plain, target: self, action: #selector(logout))
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: Symbols.add, style: .plain, target: self, action: #selector(addNewLocation))
-        self.navigationItem.title = "On the Map"
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "LOGOUT", style: .plain, target: self, action: #selector(logout))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: Symbols.add, style: .plain, target: self, action: #selector(addNewLocation))
+        navigationItem.title = "On the Map"
     }
     
     @objc func logout() {
         NetworkClient.logout()
-        if let navigationController = self.navigationController {
+        if let navigationController = navigationController {
             navigationController.popToRootViewController(animated: true)
         }
     }

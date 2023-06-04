@@ -8,6 +8,11 @@
 import Foundation
 
 class NetworkClient {
+    
+    struct AuthModel {
+        static var userId = ""
+    }
+    
     enum Endpoints {
         static let base = "https://onthemap-api.udacity.com/v1"
         
@@ -17,6 +22,7 @@ class NetworkClient {
         case addStudentLocation
         case updateStudentLocation(String)
         case getAStudentLocation(String)
+        case getUserPublicData(String)
         
         var stringValue: String {
             switch self {
@@ -32,6 +38,8 @@ class NetworkClient {
                 return Endpoints.base + "/StudentLocation/\(objectId)"
             case .getAStudentLocation(let uniqueKey):
                 return Endpoints.base + "/StudentLocation?uniqueKey=\(uniqueKey)"
+            case .getUserPublicData(let userId):
+                return Endpoints.base + "/users/\(userId)"
             }
         }
         
@@ -40,8 +48,18 @@ class NetworkClient {
         }
     }
     
-    class func updateStudentLocation(id studentObjectId: String, completion: @escaping (Bool, Error?) -> Void) {
-        self.put(url: Endpoints.updateStudentLocation(studentObjectId).url, body: AddStudentLocationRequest(uniqueKey: "001RET", firstName: "Patrick", lastName: "Mahomes", mapString: "", mediaURL: "", latitude: 1.0, longitude: 1.0), response: UpdateStudentLocationResponse.self) { response, error in
+    class func getUserPublicData(completion: @escaping (PublicUserDataResponse?, Error?) -> Void) {
+        get(url: Endpoints.getUserPublicData(AuthModel.userId).url, parseUdacitySecurity: true, response: PublicUserDataResponse.self) { response, error in
+            if let response = response {
+                completion(response, nil)
+            } else {
+                completion(nil, error)
+            }
+        }
+    }
+    
+    class func updateStudentLocation(id studentObjectId: String, mapString: String, mediaURL: String, latitude: Double, longitude: Double, completion: @escaping (Bool, Error?) -> Void) {
+        put(url: Endpoints.updateStudentLocation(studentObjectId).url, body: AddStudentLocationRequest(uniqueKey: UserPublicData.userPublicData.key, firstName: UserPublicData.userPublicData.firstName, lastName: UserPublicData.userPublicData.lastName, mapString: mapString, mediaURL: mediaURL, latitude: latitude, longitude: longitude), response: UpdateStudentLocationResponse.self) { response, error in
             if let response = response {
                 completion(response.updatedAt.isEmpty != true, nil)
             } else {
@@ -50,8 +68,8 @@ class NetworkClient {
         }
     }
     
-    class func addStudentLocation(firstName: String, lastName: String, mapString: String, mediaURL: String, latitude: Double, longitude: Double, completion: @escaping (Bool, Error?) -> Void) {
-        self.post(url: Endpoints.addStudentLocation.url, body: AddStudentLocationRequest(uniqueKey: "001RET", firstName: firstName, lastName: lastName, mapString: mapString, mediaURL: mediaURL, latitude: latitude, longitude: longitude), response: AddStudentLocationResponse.self) { response, error in
+    class func addStudentLocation(mapString: String, mediaURL: String, latitude: Double, longitude: Double, completion: @escaping (Bool, Error?) -> Void) {
+        post(url: Endpoints.addStudentLocation.url, body: AddStudentLocationRequest(uniqueKey: UserPublicData.userPublicData.key, firstName: UserPublicData.userPublicData.firstName, lastName: UserPublicData.userPublicData.lastName, mapString: mapString, mediaURL: mediaURL, latitude: latitude, longitude: longitude), response: AddStudentLocationResponse.self) { response, error in
             if let response = response {
                 print(response)
                 completion(response.objectID.isEmpty != true, nil)
@@ -62,7 +80,7 @@ class NetworkClient {
     }
     
     class func getStudentLocations(completion: @escaping ([StudentLocation], Error?) -> Void) {
-        self.get(url: Endpoints.getStudentLocations.url, response: StudentLocationResultResponse.self) { response, error in
+        get(url: Endpoints.getStudentLocations.url, response: StudentLocationResultResponse.self) { response, error in
             if let response = response {
                 completion(response.results, error)
             } else {
@@ -72,9 +90,10 @@ class NetworkClient {
     }
     
     class func login(username: String, password: String, completion: @escaping (Bool, Error?) -> Void) {
-        self.post(url: self.Endpoints.getSession.url, parseUdacitySecurity: true, body: LoginRequest(udacity: UdacityLogin(username: username, password: password)), response: LoginResponse.self) { response, error in
+        post(url: Endpoints.getSession.url, parseUdacitySecurity: true, body: LoginRequest(udacity: UdacityLogin(username: username, password: password)), response: LoginResponse.self) { response, error in
             if let response = response {
                 print(response.account)
+                AuthModel.userId = response.session.id
                 completion(response.account.registered, error)
             } else {
                 completion(false, error)
@@ -102,14 +121,15 @@ class NetworkClient {
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data else { return }
             
-            let newData = self.parseToUdacityData(data)
+            let newData = parseToUdacityData(data)
             print(String(data: newData, encoding: .utf8)!)
         }
         
         task.resume()
     }
     
-    @discardableResult private class func get<ResponseType: Decodable>(url: URL, parseUdacitySecurity: Bool = false, response: ResponseType.Type, completion: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
+    @discardableResult
+    private class func get<ResponseType: Decodable>(url: URL, parseUdacitySecurity: Bool = false, response: ResponseType.Type, completion: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             guard let data = data else {
                 DispatchQueue.main.async {
@@ -123,7 +143,7 @@ class NetworkClient {
             var newData = data
             
             if parseUdacitySecurity {
-                newData = self.parseToUdacityData(data)
+                newData = parseToUdacityData(data)
             }
             
             do {
@@ -151,7 +171,8 @@ class NetworkClient {
         return task
     }
     
-    @discardableResult private class func post<RequestType: Encodable, ResponseType: Decodable>(url: URL, parseUdacitySecurity: Bool = false, body: RequestType, response: ResponseType.Type, completion: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
+    @discardableResult
+    private class func post<RequestType: Encodable, ResponseType: Decodable>(url: URL, parseUdacitySecurity: Bool = false, body: RequestType, response: ResponseType.Type, completion: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -171,7 +192,7 @@ class NetworkClient {
             var newData = data
             
             if parseUdacitySecurity {
-                newData = self.parseToUdacityData(data)
+                newData = parseToUdacityData(data)
             }
             
             do {
@@ -221,7 +242,7 @@ class NetworkClient {
             var newData = data
             
             if parseUdacitySecurity {
-                newData = self.parseToUdacityData(data)
+                newData = parseToUdacityData(data)
             }
             
             do {
@@ -256,8 +277,7 @@ class NetworkClient {
     // to be valid
     private class func parseToUdacityData(_ data: Data) -> Data {
         let parsedUdacitySecurityData = 5..<data.count
-        let newData = data.subdata(in: parsedUdacitySecurityData)
         
-        return newData
+        return data.subdata(in: parsedUdacitySecurityData)
     }
 }

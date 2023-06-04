@@ -7,7 +7,7 @@
 
 import UIKit
 
-class LoginViewController: UIViewController {
+class LoginViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
@@ -18,6 +18,7 @@ class LoginViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view
+        
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -54,11 +55,15 @@ class LoginViewController: UIViewController {
     private func handleLoginResponse(success: Bool, error: Error?) {
         self.setLoggingIn(false)
         if success {
+            NetworkClient.getUserPublicData { response, error in
+                UserPublicData.userPublicData = response
+            }
+            
             let mainTabBarController = storyboard?.instantiateViewController(withIdentifier: "MainTabBarController")
             navigationController?.pushViewController(mainTabBarController!, animated: true)
         } else {
             self.setLoggingIn(false)
-            self.showLoginFailure(title: "Login Failed", message: error?.localizedDescription ?? "")
+            self.showUIAlertView(title: "Login Failed", message: error?.localizedDescription ?? "")
         }
     }
     
@@ -74,6 +79,10 @@ class LoginViewController: UIViewController {
             self.loginButton.isEnabled = !loggingIn
             self.signupButton.isEnabled = !loggingIn
         
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        return true
     }
 }
 

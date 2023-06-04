@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-class AddLocationFormViewController: UIViewController {
+class AddLocationFormViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var locationTextField: UITextField!
     @IBOutlet weak var linkTextField: UITextField!
@@ -16,10 +16,10 @@ class AddLocationFormViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.navigationItem.hidesBackButton = true
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "CANCEL", style: .plain, target: self, action: #selector(cancel))
+        navigationItem.hidesBackButton = true
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "CANCEL", style: .plain, target: self, action: #selector(cancel))
         
-        self.navigationItem.title = "Add Location"
+        navigationItem.title = "Add Location"
     }
     
     @objc func cancel() {
@@ -29,9 +29,9 @@ class AddLocationFormViewController: UIViewController {
     }
     
     @IBAction func findLocationButtonPressed(_ sender: UIButton) {
-        guard let locationText = self.locationTextField.text, self.locationTextField.hasText else { return }
+        guard let locationText = locationTextField.text, locationTextField.hasText else { return }
         
-        guard let linkText = self.linkTextField.text, self.linkTextField.hasText else { return }
+        guard let linkText = linkTextField.text, linkTextField.hasText else { return }
         
         let addLocationMapVC = storyboard?.instantiateViewController(withIdentifier: "AddLocationMapViewController") as! AddLocationMapViewController
         
@@ -41,5 +41,7 @@ class AddLocationFormViewController: UIViewController {
         navigationController?.pushViewController(addLocationMapVC, animated: true)
     }
     
-    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        return true
+    }
 }

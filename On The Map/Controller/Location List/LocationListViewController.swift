@@ -15,15 +15,12 @@ class LocationListViewController: UITableViewController {
         
         NetworkClient.getStudentLocations { studentLocations, error in
             if let _ = error {
-                self.showLoginFailure(title: "Fetch Failed", message: "Error fetching student locations")
+                self.showUIAlertView(title: "Fetch Failed", message: "Error fetching student locations")
                 
                 return
             }
             
             StudentModel.studentLocations = studentLocations
-            
-            print("HERE: \(studentLocations)")
-            
             
             self.tableView.reloadData()
         }

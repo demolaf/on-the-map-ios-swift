@@ -9,9 +9,9 @@ import Foundation
 import UIKit
 
 extension UIViewController {
-    func showLoginFailure(title: String, message: String) {
+    func showUIAlertView(title: String, message: String) {
         let alertVC = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        self.present(alertVC, animated: true)
+        present(alertVC, animated: true)
     }
 }
