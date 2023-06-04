@@ -21,9 +21,9 @@ class AddLocationMapViewController: UIViewController, MKMapViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        searchForLocation()
-        
         navigationItem.title = "Add Location"
+        
+        searchForLocation()
     }
     
     @IBAction func finishButtonPressed(_ sender: UIButton?) {
